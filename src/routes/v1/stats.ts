@@ -4,9 +4,17 @@ import { json } from "../../../utils/json";
 
 export default function registerStatsRoute(router: Router) {
     router.on("GET", "/v1/stats", async () => {
-        const [totalPackages, totalUsers, totalDownloads] = await Promise.all([
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const thirtyDaysStr = thirtyDaysAgo.toISOString().slice(0, 10);
+
+        const [totalPackages, totalUsers, monthlyDownloadsResult, totalDownloadsResult] = await Promise.all([
             packagesCollection.countDocuments(),
             usersCollection.countDocuments(),
+            downloadsCollection.aggregate([
+                { $match: { day: { $gte: thirtyDaysStr } } },
+                { $group: { _id: null, total: { $sum: "$count" } } },
+            ]).toArray(),
             downloadsCollection.aggregate([
                 { $group: { _id: null, total: { $sum: "$count" } } },
             ]).toArray(),
@@ -15,7 +23,8 @@ export default function registerStatsRoute(router: Router) {
         return json({
             packages: totalPackages,
             users: totalUsers,
-            downloads: totalDownloads[0]?.total || 0,
+            monthlyDownloads: monthlyDownloadsResult[0]?.total || 0,
+            totalDownloads: totalDownloadsResult[0]?.total || 0,
         });
     });
 }
