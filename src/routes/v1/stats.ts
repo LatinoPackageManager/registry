@@ -1,6 +1,6 @@
-import { packagesCollection, usersCollection, downloadsCollection } from "../../../db";
-import { Router } from "../../../router";
-import { json } from "../../../utils/json";
+import { packagesCollection, usersCollection, downloadsCollection } from "../../db";
+import { Router } from "../../router";
+import { json } from "../../utils/json";
 
 export default function registerStatsRoute(router: Router) {
     router.on("GET", "/v1/stats", async () => {
