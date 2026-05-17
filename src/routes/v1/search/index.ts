@@ -1,4 +1,4 @@
-import { packagesCollection } from "../../../db";
+import { packagesCollection, versionsCollection } from "../../../db";
 import { Router } from "../../../router";
 import { json } from "../../../utils/json";
 
@@ -20,6 +20,7 @@ export default function registerSearchRoute(router: Router) {
                 ],
             }, {
                 projection: {
+                    _id: 1,
                     name: 1,
                     description: 1,
                     keywords: 1,
@@ -31,15 +32,26 @@ export default function registerSearchRoute(router: Router) {
             .sort({ downloadCount: -1, updatedAt: -1 })
             .limit(limit)
             .toArray();
-        return json({
-            results: rows.map((row) => ({
+        
+        const results = [];
+        for (const row of rows) {
+            const latestVersion = await versionsCollection
+                .findOne({ packageId: row._id }, {
+                    projection: { version: 1, _id: 0 },
+                    sort: { createdAt: -1 },
+                });
+            
+            results.push({
                 name: row.name,
                 description: row.description,
                 keywords: row.keywords || [],
                 license: row.license,
                 downloadCount: row.downloadCount || 0,
                 updatedAt: row.updatedAt,
-            })),
-        });
+                latestVersion: latestVersion?.version || null,
+            });
+        }
+        
+        return json({ results });
     });
 }
