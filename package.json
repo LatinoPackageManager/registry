@@ -4,15 +4,21 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.901.0",
     "bun-types": "latest",
-    "mongodb": "^6.20.0"
+    "mongodb": "^6.20.0",
+    "semver": "^7.7.2"
   },
   "scripts": {
     "start": "bun run src/index.ts",
-    "dev": "bun --hot src/index.ts"
+    "dev": "bun --hot src/index.ts",
+    "typecheck": "tsc --noEmit"
   },
   "type": "module",
   "trustedDependencies": [
     "aws-sdk",
     "protobufjs"
-  ]
+  ],
+  "devDependencies": {
+    "@types/semver": "^7.7.1",
+    "typescript": "^6.0.3"
+  }
 }

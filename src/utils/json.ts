@@ -7,3 +7,11 @@ export function json(data: unknown, init: ResponseInit = {}) {
         },
     });
 }
+
+export async function readJson<T = Record<string, unknown>>(req: Request): Promise<T | null> {
+    try {
+        return (await req.json()) as T;
+    } catch {
+        return null;
+    }
+}

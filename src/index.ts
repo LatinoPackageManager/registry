@@ -1,4 +1,3 @@
-// Bun registry server — REST API + MongoDB
 // Routes:
 //  POST   /v1/auth/signup   {email,password}
 //  POST   /v1/auth/login    {email,password}
@@ -9,16 +8,28 @@
 //  GET    /v1/search?q=term             -> simple name LIKE search
 //  GET    /v1/download/:name/:version   -> zip file stream
 
-import { SERVER_PORT } from "./config";
+import { assertProductionConfig, SERVER_PORT } from "./config";
 import "./db";
 import { router } from "./router";
 import registerRoutes from "./routes";
+import { corsPreflight, withCors } from "./utils/http";
+import { isRateLimited } from "./utils/rate-limit";
 
+assertProductionConfig();
 registerRoutes(router);
 
 const server = Bun.serve({
     port: SERVER_PORT,
-    fetch: (req) => router.route(req),
+    async fetch(req) {
+        if (req.method === "OPTIONS") return corsPreflight();
+        if (isRateLimited(req)) {
+            return withCors(new Response(JSON.stringify({ error: "rate limit exceeded" }), {
+                status: 429,
+                headers: { "content-type": "application/json" },
+            }));
+        }
+        return withCors(await router.route(req));
+    },
 });
 
 console.log(`latipm registry on http://localhost:${server.port}`);

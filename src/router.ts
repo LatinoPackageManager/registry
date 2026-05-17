@@ -14,16 +14,24 @@ export class Router {
 
     async route(req: Request): Promise<Response> {
         const url = new URL(req.url);
-        for (const r of this.routes) {
-            if (req.method !== r.method) continue;
-            const match = url.pathname.match(r.pattern);
-            if (match) {
-                const params: Record<string, string> = {};
-                r.keys.forEach((key, index) => {
-                    params[key] = match[index + 1];
-                });
-                return await r.handler(req, params);
+        try {
+            for (const r of this.routes) {
+                if (req.method !== r.method) continue;
+                const match = url.pathname.match(r.pattern);
+                if (match) {
+                    const params: Record<string, string> = {};
+                    r.keys.forEach((key, index) => {
+                        params[key] = decodeURIComponent(match[index + 1] || "");
+                    });
+                    return await r.handler(req, params);
+                }
             }
+        } catch (error) {
+            console.error(error);
+            return new Response(JSON.stringify({ error: "internal server error" }), {
+                status: 500,
+                headers: { "content-type": "application/json" },
+            });
         }
         return new Response(JSON.stringify({ error: "not found" }), {
             status: 404,

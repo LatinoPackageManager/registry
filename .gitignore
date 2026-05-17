@@ -10,3 +10,5 @@ registry.db-wal
 .env.test.local
 .env.production.local
 .env
+
+server.*.log
