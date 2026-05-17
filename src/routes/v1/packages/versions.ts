@@ -16,7 +16,7 @@ export default function registerPackageVersionsRoute(router: Router) {
         }
         const owner = await usersCollection.findOne({ _id: pkg.ownerId });
         const rows = await versionsCollection
-            .find({ packageId: pkg._id }, { projection: { version: 1, tarballUrl: 1, shasum: 1, manifest: 1, createdAt: 1, downloadCount: 1 } })
+            .find({ packageId: pkg._id }, { projection: { version: 1, tarballUrl: 1, shasum: 1, manifest: 1, readme: 1, createdAt: 1, downloadCount: 1 } })
             .sort({ createdAt: -1 })
             .toArray();
         const latestVersion = semver.rsort(rows.map((row) => row.version).filter((version) => semver.valid(version)))[0];
@@ -41,6 +41,7 @@ export default function registerPackageVersionsRoute(router: Router) {
                 version: row.version,
                 dist: { tarball: row.tarballUrl, shasum: row.shasum },
                 manifest: row.manifest,
+                readme: row.readme,
                 downloadCount: row.downloadCount || 0,
                 createdAt: row.createdAt,
             })),

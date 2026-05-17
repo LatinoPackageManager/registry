@@ -109,6 +109,7 @@ export default function registerPublishRoute(router: Router) {
             tarballUrl: tarball,
             shasum: sha256,
             manifest: meta,
+            readme,
             downloadCount: 0,
             createdAt: now,
         });
