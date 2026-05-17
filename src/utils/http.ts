@@ -8,7 +8,7 @@ export function withCors(request: Request, response: Response) {
     
     if (allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
         headers.set("access-control-allow-origin", origin);
-        headers.set("access-control-allow-methods", "GET,POST,DELETE,OPTIONS");
+        headers.set("access-control-allow-methods", "GET,POST,DELETE,OPTIONS,PUT,PATCH");
         headers.set("access-control-allow-headers", "content-type,authorization");
         headers.set("access-control-max-age", "86400");
     }
