@@ -17,7 +17,7 @@ export default function registerPackageVersionRoute(router: Router) {
         const owner = await usersCollection.findOne({ _id: pkg.ownerId });
         const row = await versionsCollection.findOne(
             { packageId: pkg._id, version },
-            { projection: { version: 1, tarballUrl: 1, shasum: 1, manifest: 1, readme: 1, createdAt: 1, downloadCount: 1 } }
+            { projection: { version: 1, tarballUrl: 1, shasum: 1, manifest: 1, readme: 1, licenseText: 1, createdAt: 1, downloadCount: 1 } }
         );
         if (!row) {
             return json({ error: "not found" }, { status: 404 });
@@ -28,6 +28,7 @@ export default function registerPackageVersionRoute(router: Router) {
             dist: { tarball: row.tarballUrl, shasum: row.shasum },
             manifest: row.manifest,
             readme: row.readme,
+            licenseText: row.licenseText,
             owner: owner ? publicProfile(owner) : null,
             downloadCount: row.downloadCount || 0,
             createdAt: row.createdAt,

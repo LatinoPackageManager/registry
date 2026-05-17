@@ -7,6 +7,7 @@ import { json } from "../../../utils/json";
 import { getAuthUser } from "../../../utils/auth";
 import { normalizeManifest } from "../../../utils/manifest";
 import { extractReadmeFromZip } from "../../../utils/readme";
+import { extractLicenseFromZip } from "../../../utils/license";
 
 const MAX_PACKAGE_BYTES = Number(process.env.MAX_PACKAGE_BYTES || 25 * 1024 * 1024);
 
@@ -50,6 +51,11 @@ export default function registerPublishRoute(router: Router) {
         let readme = meta.readme;
         if (!readme) {
             readme = await extractReadmeFromZip(buf);
+        }
+
+        let licenseText = meta.licenseText;
+        if (!licenseText) {
+            licenseText = await extractLicenseFromZip(buf);
         }
 
         const now = new Date();
@@ -103,6 +109,17 @@ export default function registerPublishRoute(router: Router) {
             ContentType: "application/zip",
         }));
         const tarball = `${R2_PUBLIC_URL.replace(/\/$/, "")}/${r2Key}`;
+        
+        if (licenseText) {
+            const licenseKey = `${name}/LICENSE.md`;
+            await s3.send(new PutObjectCommand({
+                Bucket: R2_BUCKET,
+                Key: licenseKey,
+                Body: licenseText,
+                ContentType: "text/markdown",
+            }));
+        }
+        
         await versionsCollection.insertOne({
             packageId: pkg._id,
             version,
@@ -110,6 +127,7 @@ export default function registerPublishRoute(router: Router) {
             shasum: sha256,
             manifest: meta,
             readme,
+            licenseText,
             downloadCount: 0,
             createdAt: now,
         });
