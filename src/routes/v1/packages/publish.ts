@@ -6,6 +6,7 @@ import { R2_BUCKET, R2_ENDPOINT, R2_PUBLIC_URL } from "../../../config";
 import { json } from "../../../utils/json";
 import { getAuthUser } from "../../../utils/auth";
 import { normalizeManifest } from "../../../utils/manifest";
+import { extractReadmeFromZip } from "../../../utils/readme";
 
 const MAX_PACKAGE_BYTES = Number(process.env.MAX_PACKAGE_BYTES || 25 * 1024 * 1024);
 
@@ -46,19 +47,24 @@ export default function registerPublishRoute(router: Router) {
             return json({ error: "sha256 invalido" }, { status: 400 });
         }
 
+        let readme = meta.readme;
+        if (!readme) {
+            readme = await extractReadmeFromZip(buf);
+        }
+
         const now = new Date();
         let pkg = await packagesCollection.findOne({ name });
         if (!pkg) {
             const ownerId = new ObjectId(user.id);
             const insert = await packagesCollection.insertOne({
                 name,
-                ownerId,
+                ownerId: new ObjectId(user.id),
                 description: meta.description,
                 keywords: meta.keywords,
                 license: meta.license,
                 repository: meta.repository,
                 homepage: meta.homepage,
-                readme: meta.readme,
+                readme,
                 downloadCount: 0,
                 createdAt: now,
                 updatedAt: now,
@@ -72,7 +78,7 @@ export default function registerPublishRoute(router: Router) {
                 license: meta.license,
                 repository: meta.repository,
                 homepage: meta.homepage,
-                readme: meta.readme,
+                readme,
                 downloadCount: 0,
                 createdAt: now,
                 updatedAt: now,
@@ -113,7 +119,7 @@ export default function registerPublishRoute(router: Router) {
                 license: meta.license,
                 repository: meta.repository,
                 homepage: meta.homepage,
-                readme: meta.readme,
+                readme,
                 updatedAt: now,
             },
         });
