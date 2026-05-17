@@ -1,4 +1,4 @@
-import { ObjectId, packagesCollection, usersCollection } from "../../../db";
+import { ObjectId, packagesCollection, usersCollection, versionsCollection } from "../../../db";
 import { Router } from "../../../router";
 import { getAuthUser } from "../../../utils/auth";
 import { json, readJson } from "../../../utils/json";
@@ -66,6 +66,7 @@ async function getUserPackages(userId: string) {
     const rows = await packagesCollection
         .find({ ownerId: new ObjectId(userId) }, {
             projection: {
+                _id: 1,
                 name: 1,
                 description: 1,
                 keywords: 1,
@@ -78,13 +79,25 @@ async function getUserPackages(userId: string) {
         .sort({ updatedAt: -1 })
         .toArray();
 
-    return rows.map((row) => ({
-        name: row.name,
-        description: row.description,
-        keywords: row.keywords || [],
-        license: row.license,
-        downloadCount: row.downloadCount || 0,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-    }));
+    const packages = [];
+    for (const row of rows) {
+        const latestVersion = await versionsCollection
+            .findOne({ packageId: row._id }, {
+                projection: { version: 1, _id: 0 },
+                sort: { createdAt: -1 },
+            });
+        
+        packages.push({
+            name: row.name,
+            description: row.description,
+            keywords: row.keywords || [],
+            license: row.license,
+            downloadCount: row.downloadCount || 0,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+            latestVersion: latestVersion?.version || null,
+        });
+    }
+    
+    return packages;
 }
