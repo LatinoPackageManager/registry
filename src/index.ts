@@ -21,15 +21,15 @@ registerRoutes(router);
 const server = Bun.serve({
     port: SERVER_PORT,
     async fetch(req) {
-        if (req.method === "OPTIONS") return corsPreflight();
+        if (req.method === "OPTIONS") return corsPreflight(req);
         if (isRateLimited(req)) {
-            return withCors(new Response(JSON.stringify({ error: "rate limit exceeded" }), {
+            return withCors(req, new Response(JSON.stringify({ error: "rate limit exceeded" }), {
                 status: 429,
                 headers: { "content-type": "application/json" },
             }));
         }
-        return withCors(await router.route(req));
+        return withCors(req, await router.route(req));
     },
 });
 
-console.log(`latipm registry on http://localhost:${server.port}`);
+console.log(`LatinoPM registry on http://localhost:${server.port}`);

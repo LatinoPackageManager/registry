@@ -36,7 +36,7 @@ export function publicProfile(user: UserDocument): PublicProfile {
     return {
         id: user._id.toString(),
         username: user.username,
-        displayName: user.displayName || user.username || user.email.split("@")[0] || "Latipm user",
+        displayName: user.displayName || user.username || user.email.split("@")[0] || "LatinoPM user",
         avatarUrl: user.avatarUrl,
         bio: user.bio,
         website: user.website,
