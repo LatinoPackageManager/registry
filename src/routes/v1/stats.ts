@@ -1,8 +1,11 @@
 import { packagesCollection, usersCollection, downloadsCollection } from "../../db";
 import { Router } from "../../router";
 import { json } from "../../utils/json";
+import registerPopularStatsRoute from "./stats/popular";
 
 export default function registerStatsRoute(router: Router) {
+    registerPopularStatsRoute(router);
+    
     router.on("GET", "/v1/stats", async () => {
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);

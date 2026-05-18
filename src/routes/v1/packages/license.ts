@@ -29,7 +29,7 @@ export default function registerPackageLicenseRoute(router: Router) {
         try {
             const r2Object = await getR2Object(r2Key);
             if (r2Object) {
-                const body = await r2Object.arrayBuffer();
+                const body = Buffer.from(await (r2Object as any).transformToByteArray());
                 return new Response(body, {
                     headers: {
                         "Content-Type": "text/markdown",
@@ -39,8 +39,8 @@ export default function registerPackageLicenseRoute(router: Router) {
             }
         } catch {}
         
-        if (latestVersion.manifest?.licenseText) {
-            return new Response(latestVersion.manifest.licenseText, {
+        if (latestVersion.licenseText) {
+            return new Response(latestVersion.licenseText, {
                 headers: {
                     "Content-Type": "text/markdown",
                     "Cache-Control": "public, max-age=3600",

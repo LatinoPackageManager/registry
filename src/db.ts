@@ -34,6 +34,8 @@ interface VersionSchema {
     tarballUrl: string;
     shasum: string;
     manifest: Record<string, unknown>;
+    readme?: string;
+    licenseText?: string;
     downloadCount?: number;
     createdAt: Date;
 }

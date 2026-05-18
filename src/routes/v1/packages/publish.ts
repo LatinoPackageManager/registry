@@ -8,8 +8,27 @@ import { getAuthUser } from "../../../utils/auth";
 import { normalizeManifest } from "../../../utils/manifest";
 import { extractReadmeFromZip } from "../../../utils/readme";
 import { extractLicenseFromZip } from "../../../utils/license";
+import { extractReadmeFromTarball } from "../../../utils/readme";
+import { extractLicenseFromTarball } from "../../../utils/license";
 
 const MAX_PACKAGE_BYTES = Number(process.env.MAX_PACKAGE_BYTES || 25 * 1024 * 1024);
+
+function detectArchiveFormat(file: File): "tarball" | "zip" {
+    if (file.name.endsWith(".tar.gz") || file.name.endsWith(".tgz")) {
+        return "tarball";
+    }
+    if (file.name.endsWith(".zip")) {
+        return "zip";
+    }
+    const contentType = file.type.toLowerCase();
+    if (contentType.includes("gzip") || contentType.includes("tar")) {
+        return "tarball";
+    }
+    if (contentType.includes("zip")) {
+        return "zip";
+    }
+    return "zip";
+}
 
 export default function registerPublishRoute(router: Router) {
     router.on("POST", "/v1/packages/:name/:version", async (req, params) => {
@@ -37,6 +56,7 @@ export default function registerPublishRoute(router: Router) {
 
         const file = form.get("file") as unknown as File | null;
         const sha256 = String(form.get("sha256") || "");
+        const format = String(form.get("format") || "auto");
         if (!file) return json({ error: "file requerido" }, { status: 400 });
         if (file.size > MAX_PACKAGE_BYTES) {
             return json({ error: `archivo demasiado grande, max ${MAX_PACKAGE_BYTES} bytes` }, { status: 413 });
@@ -48,14 +68,27 @@ export default function registerPublishRoute(router: Router) {
             return json({ error: "sha256 invalido" }, { status: 400 });
         }
 
-        let readme = meta.readme;
-        if (!readme) {
-            readme = await extractReadmeFromZip(buf);
-        }
+        const detectedFormat = format === "auto" ? detectArchiveFormat(file) : (format as "tarball" | "zip");
+        const ext = detectedFormat === "tarball" ? ".tar.gz" : ".zip";
+        const contentType = detectedFormat === "tarball" ? "application/gzip" : "application/zip";
 
-        let licenseText = meta.licenseText;
-        if (!licenseText) {
-            licenseText = await extractLicenseFromZip(buf);
+        let readme: string | undefined = typeof meta.readme === "string" ? meta.readme : undefined;
+        let licenseText: string | undefined = typeof meta.licenseText === "string" ? meta.licenseText : undefined;
+        
+        if (detectedFormat === "zip") {
+            if (!readme) {
+                readme = await extractReadmeFromZip(buf);
+            }
+            if (!licenseText) {
+                licenseText = await extractLicenseFromZip(buf);
+            }
+        } else if (detectedFormat === "tarball") {
+            if (!readme) {
+                readme = await extractReadmeFromTarball(buf);
+            }
+            if (!licenseText) {
+                licenseText = await extractLicenseFromTarball(buf);
+            }
         }
 
         const now = new Date();
@@ -70,7 +103,7 @@ export default function registerPublishRoute(router: Router) {
                 license: meta.license,
                 repository: meta.repository,
                 homepage: meta.homepage,
-                readme,
+                readme: readme,
                 downloadCount: 0,
                 createdAt: now,
                 updatedAt: now,
@@ -84,7 +117,7 @@ export default function registerPublishRoute(router: Router) {
                 license: meta.license,
                 repository: meta.repository,
                 homepage: meta.homepage,
-                readme,
+                readme: readme,
                 downloadCount: 0,
                 createdAt: now,
                 updatedAt: now,
@@ -101,12 +134,12 @@ export default function registerPublishRoute(router: Router) {
             return json({ error: "R2_ENDPOINT no configurado" }, { status: 500 });
         }
 
-        const r2Key = `${name}/${version}.zip`;
+        const r2Key = `${name}/${version}${ext}`;
         await s3.send(new PutObjectCommand({
             Bucket: R2_BUCKET,
             Key: r2Key,
             Body: buf,
-            ContentType: "application/zip",
+            ContentType: contentType,
         }));
         const tarball = `${R2_PUBLIC_URL.replace(/\/$/, "")}/${r2Key}`;
         
@@ -115,7 +148,7 @@ export default function registerPublishRoute(router: Router) {
             await s3.send(new PutObjectCommand({
                 Bucket: R2_BUCKET,
                 Key: licenseKey,
-                Body: licenseText,
+                Body: Buffer.from(String(licenseText), "utf-8"),
                 ContentType: "text/markdown",
             }));
         }
@@ -138,7 +171,7 @@ export default function registerPublishRoute(router: Router) {
                 license: meta.license,
                 repository: meta.repository,
                 homepage: meta.homepage,
-                readme,
+                readme: readme,
                 updatedAt: now,
             },
         });
