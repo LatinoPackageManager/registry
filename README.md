@@ -1,6 +1,6 @@
 # Latipm Registry
 
-Backend principal para LPM. Guarda metadata en MongoDB y tarballs en R2/S3.
+Backend principal para LPM. Guarda metadata en MongoDB y tarballs en R2/S3. (Nota: Por mientras no se usa Tarball directamentes, si no que se comprime el paquete en un archivo zip y se sube a R2, en un futuro se podria usar Tarball directamente).
 
 ## Produccion
 
@@ -66,7 +66,3 @@ Los usuarios pueden tener metadata publica para el frontend:
 ```
 
 `GET /v1/packages/:name` devuelve `owner` con este perfil publico, listo para mostrarlo en una pagina tipo npm.
-
-## Notas
-
-El frontend tipo npm deberia usar `GET /v1/packages/:name` como ficha principal. Ese endpoint devuelve metadata, owner, version latest, versiones, README, keywords y contador de descargas.
