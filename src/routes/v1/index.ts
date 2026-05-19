@@ -5,6 +5,7 @@ import registerPackageRoutes from "./packages";
 import registerSearchRoute from "./search";
 import registerUserRoutes from "./users";
 import registerStatsRoute from "./stats";
+import registerTagsRoute from "./tags";
 
 export default function registerV1Routes(router: Router) {
     registerAuthRoutes(router);
@@ -13,4 +14,5 @@ export default function registerV1Routes(router: Router) {
     registerSearchRoute(router);
     registerDownloadRoute(router);
     registerStatsRoute(router);
+    registerTagsRoute(router);
 }
