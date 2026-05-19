@@ -75,14 +75,21 @@ export default function registerPopularStatsRoute(router: Router) {
             };
         }).filter((p): p is NonNullable<typeof p> => p !== null && p.name !== "unknown");
 
+        const packageIdsObjectIds = packages.map((p) => p._id) as import("mongodb").ObjectId[];
+        const tagDownloads = await downloadsCollection.aggregate<{ tag: string; count: number }>([
+            { $match: { packageId: { $in: packageIdsObjectIds } } },
+            { $lookup: { from: "packages", localField: "packageId", foreignField: "_id", as: "pkg" } },
+            { $unwind: "$pkg" },
+            { $match: { "pkg.keywords": { $exists: true, $ne: null } } },
+            { $unwind: { path: "$pkg.keywords", preserveNullAndEmptyArrays: false } },
+            { $group: { _id: "$pkg.keywords", count: { $sum: "$count" } } },
+            { $project: { _id: 0, tag: "$_id", count: 1 } },
+        ]).toArray();
+
         const tagCounts = new Map<string, number>();
-        for (const pkg of packages) {
-            if (pkg.keywords && pkg.keywords.length > 0) {
-                for (const keyword of pkg.keywords) {
-                    const tag = keyword.toLowerCase();
-                    tagCounts.set(tag, (tagCounts.get(tag) || 0) + (pkg.downloadCount || 0));
-                }
-            }
+        for (const row of tagDownloads) {
+            const tag = row.tag.toLowerCase();
+            tagCounts.set(tag, (tagCounts.get(tag) || 0) + row.count);
         }
 
         const popularTags = Array.from(tagCounts.entries())
